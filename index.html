@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashKat 🐱</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --s2:      #0d1117;
+  --border:  #2d333b;
+  --text:    #cdd9e5;
+  --muted:   #636e7b;
+  --income:  #57ab5a;
+  --expense: #e5534b;
+  --accent:  #539bf5;
+  --pos:     #57ab5a;
+  --neg:     #e5534b;
+  --savings: #986ee2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+       background: var(--bg); color: var(--text); font-size: 12.5px; }
+
+/* ── LOGIN SCREEN ───────────────────────────────────── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh; background: var(--bg);
+}
+.login-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 48px 40px; text-align: center;
+  max-width: 360px; width: 100%;
+}
+.login-logo { font-size: 64px; margin-bottom: 16px; }
+.login-box h1 { font-size: 28px; font-weight: 700; color: #e6edf3; margin-bottom: 8px; }
+.login-box p  { color: var(--muted); font-size: 13px; margin-bottom: 32px; line-height: 1.5; }
+.google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 12px 20px; border-radius: 8px;
+  background: #fff; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: #333;
+  transition: all .15s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.google-btn:hover { background: #f5f5f5; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.google-btn svg { flex-shrink: 0; }
+.login-error { color: var(--neg); font-size: 12px; margin-top: 12px; display: none; }
+
+/* ── LOADING ────────────────────────────────────────── */
+#loading-screen {
+  display: none; align-items: center; justify-content: center;
+  height: 100vh; flex-direction: column; gap: 16px;
+}
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── APP ────────────────────────────────────────────── */
+#app { display: none; }
+
+/* ── HEADER ─────────────────────────────────────────── */
+.hdr {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 18px; display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 300;
+}
+.hdr-logo { font-size: 18px; }
+.hdr h1   { font-size: 15px; font-weight: 700; color: #e6edf3; }
+.hdr-sub  { color: var(--muted); font-size: 11px; flex: 1; }
+.hdr-user { display: flex; align-items: center; gap: 8px; }
+.hdr-avatar { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); }
+.hdr-name { font-size: 11px; color: var(--muted); max-width: 140px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-indicator { font-size: 10px; color: var(--muted); opacity: 0; transition: opacity .3s; }
+.save-indicator.show { opacity: 1; }
+.btn {
+  padding: 4px 11px; border-radius: 5px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 11px;
+  transition: all .15s; white-space: nowrap;
+}
+.btn:hover { border-color: var(--neg); color: var(--neg); }
+
+/* ── SCROLL WRAPPER ─────────────────────────────────── */
+.wrap { overflow: auto; height: calc(100vh - 45px); }
+
+/* ── TABLE ──────────────────────────────────────────── */
+table { border-collapse: collapse; width: max-content; }
+th, td {
+  padding: 5px 9px; border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  white-space: nowrap; text-align: right; vertical-align: middle;
+}
+.cl { position: sticky; left: 0; width: 200px; min-width: 200px;
+      text-align: left; z-index: 5; background: var(--s2);
+      border-right: 1px solid var(--border); }
+.cd { position: sticky; left: 200px; width: 42px; min-width: 42px;
+      text-align: center; z-index: 5; background: var(--s2);
+      border-right: 2px solid var(--border); color: var(--muted); font-size: 11px; }
+thead th.cl, thead th.cd { z-index: 20; background: var(--surface); }
+thead th {
+  background: var(--surface); color: var(--muted);
+  font-weight: 500; font-size: 11px;
+  position: sticky; top: 0; z-index: 10; padding: 7px 9px;
+}
+thead th.cur { color: var(--accent); background: #1b2333; }
+
+/* ── SECTION ROWS ───────────────────────────────────── */
+tr.ctog td {
+  background: #161b22 !important; font-size: 10px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 9px 10px 4px; border-bottom: none; cursor: pointer;
+}
+tr.ctog-default td { color: var(--muted); }
+tr.ctog-savings td { color: var(--savings); }
+tr.ctog-debt    td { color: #f87171; }
+tr.ctog:hover td   { filter: brightness(1.4); }
+.sec-inner { display: flex; align-items: center; justify-content: space-between; }
+.add-btn {
+  font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 500;
+  color: var(--accent); cursor: pointer; background: rgba(83,155,245,.12);
+  border: 1px solid rgba(83,155,245,.3); padding: 2px 8px; border-radius: 4px;
+  transition: all .15s; flex-shrink: 0;
+}
+.add-btn:hover { background: rgba(83,155,245,.25); border-color: var(--accent); }
+
+/* ── DATA ROW TYPES ─────────────────────────────────── */
+tr.r-inc .cl  { color: var(--income); }
+tr.r-ti       { background: #0d1f12; }
+tr.r-ti  td   { color: var(--income); font-weight: 600; }
+tr.r-te       { background: #1f0d0d; }
+tr.r-te  td   { color: var(--expense); font-weight: 600; }
+tr.r-net td   { font-weight: 600; font-size: 13px; background: #161b22; }
+tr.r-bal      { background: #101820; }
+tr.r-bal td   { font-weight: 700; font-size: 13.5px; color: var(--accent); }
+tr.r-bal .cl  { color: var(--accent); }
+tr.r-tat      { background: #161b22; }
+tr.r-tat td   { font-weight: 600; color: #90cdf4; }
+tr.r-tsa      { background: #161b22; }
+tr.r-tsa td   { font-weight: 600; color: var(--savings); }
+tr.r-tdt      { background: #1f1010; }
+tr.r-tdt td   { font-weight: 600; color: #f87171; }
+tr.r-sp td    { height: 8px; background: var(--bg); border: none; }
+
+/* ── HIDDEN MONTH COLUMNS ───────────────────────────── */
+th.hid-th { width: 16px; min-width: 16px; padding: 0; cursor: pointer;
+            background: var(--surface); border-right: 1px solid var(--border); overflow: hidden; }
+th.hid-th span { display: block; writing-mode: vertical-rl; font-size: 9px;
+                 color: var(--muted); padding: 4px 2px; line-height: 1; }
+th.hid-th:hover span { color: var(--accent); }
+th.mon-th { cursor: pointer; }
+th.mon-th:hover { color: var(--accent); }
+td.hid-td { width: 16px; min-width: 16px; padding: 0;
+            background: rgba(255,255,255,.015); border-right: 1px solid var(--border); }
+
+/* ── LABEL CELL INNER ───────────────────────────────── */
+.lbl-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.lbl-txt  { flex: 1; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.lbl-txt:hover { color: var(--accent); }
+.del-btn  { display: none; background: none; border: none; color: var(--neg);
+            cursor: pointer; padding: 0 3px; font-size: 16px; line-height: 1;
+            opacity: .6; flex-shrink: 0; }
+.del-btn:hover { opacity: 1; }
+tr:hover .del-btn { display: inline; }
+td.cur { background: rgba(83,155,245,.04); }
+
+/* ── INPUTS ─────────────────────────────────────────── */
+input.val {
+  background: transparent; border: none; color: inherit; text-align: right;
+  width: 100%; font-size: 12.5px; font-family: inherit; padding: 2px 0;
+  -moz-appearance: textfield;
+}
+input.val::-webkit-inner-spin-button,
+input.val::-webkit-outer-spin-button { display: none; }
+input.val:hover { background: rgba(255,255,255,.05); border-radius: 3px; }
+input.val:focus { outline: 1px solid var(--accent); background: rgba(83,155,245,.08); border-radius: 3px; }
+
+input.date-pick {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 10px; font-family: inherit; width: 100%;
+  text-align: center; cursor: pointer; padding: 0; color-scheme: dark;
+}
+input.date-pick:focus { outline: 1px solid var(--accent); border-radius: 3px; }
+
+.pos  { color: var(--pos); }
+.neg  { color: var(--neg); }
+.zero { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ───────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🐱💰</div>
+    <h1>CashKat</h1>
+    <p>Финансовый планировщик.<br>Войди через Google — данные сохранятся в облаке.</p>
+    <button class="google-btn" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+      </svg>
+      Войти через Google
+    </button>
+    <div class="login-error" id="login-error">Ошибка входа. Попробуй ещё раз.</div>
+  </div>
+</div>
+
+<!-- ── LOADING ────────────────────────────────────── -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <span style="color:var(--muted);font-size:12px;">Загружаем данные…</span>
+</div>
+
+<!-- ── APP ───────────────────────────────────────── -->
+<div id="app">
+  <div class="hdr">
+    <span class="hdr-logo">🐱</span>
+    <h1>CashKat</h1>
+    <span class="hdr-sub">Май 2026 — Декабрь 2027 · Клик по названию — переименовать · Клик по месяцу — скрыть/показать</span>
+    <span class="save-indicator" id="save-ind">✓ сохранено</span>
+    <div class="hdr-user">
+      <img class="hdr-avatar" id="user-avatar" src="" alt="">
+      <span class="hdr-name" id="user-name"></span>
+    </div>
+    <button class="btn" onclick="signOutUser()">Выйти</button>
+  </div>
+  <div class="wrap">
+    <table id="t">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║  FIREBASE INIT                                       ║
+// ╚══════════════════════════════════════════════════════╝
+const firebaseConfig = {
+  apiKey:            "AIzaSyBs-UnTvgxjmvt2uKLJ4Pa0Pi5_auCDVfM",
+  authDomain:        "cashkot-nika.firebaseapp.com",
+  projectId:         "cashkot-nika",
+  storageBucket:     "cashkot-nika.firebasestorage.app",
+  messagingSenderId: "816508804786",
+  appId:             "1:816508804786:web:1fdd6b055298ee2fff33ab"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let currentUser = null;
+
+// ── Auth UI helpers
+function showLogin()   { document.getElementById('login-screen').style.display='flex'; document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='none'; }
+function showLoading() { document.getElementById('login-screen').style.display='none'; document.getElementById('loading-screen').style.display='flex'; document.getElementById('app').style.display='none'; }
+function showApp()     { document.getElementById('login-screen').style.display='none'; document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
+
+async function signInGoogle() {
+  document.getElementById('login-error').style.display = 'none';
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try { await auth.signInWithPopup(provider); }
+  catch(e) { document.getElementById('login-error').style.display = 'block'; }
+}
+
+async function signOutUser() {
+  if (!confirm('Выйти из аккаунта?')) return;
+  await auth.signOut();
+}
+
+// ── Auth state listener
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('user-name').textContent   = user.displayName || user.email;
+    document.getElementById('user-avatar').src         = user.photoURL || '';
+    document.getElementById('user-avatar').style.display = user.photoURL ? '' : 'none';
+    showLoading();
+    await loadFromFirestore();
+    showApp();
+    render();
+    if (CUR >= 0) requestAnimationFrame(() => {
+      document.querySelector('.wrap').scrollLeft = Math.max(0, CUR * 105 - 30);
+    });
+  } else {
+    currentUser = null;
+    showLogin();
+  }
+});
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  CONSTANTS                                           ║
+// ╚══════════════════════════════════════════════════════╝
+const NM = 20;
+const SY = 2026, SM = 4; // May = 4
+
+const MLABELS = Array.from({length: NM}, (_, i) => {
+  const d = new Date(SY, SM + i, 1);
+  return d.toLocaleDateString('ru-RU', {month:'short', year:'2-digit'}).replace(/\s*г\./,'');
+});
+
+const NOW = new Date();
+const CUR = (() => {
+  for (let i = 0; i < NM; i++) {
+    const d = new Date(SY, SM + i, 1);
+    if (d.getFullYear()===NOW.getFullYear() && d.getMonth()===NOW.getMonth()) return i;
+  }
+  return -1;
+})();
+
+const INS_BEFORE = {
+  sec_inc:'tot_inc', sec_fix:'tot_fix', sec_var:'tot_var',
+  sec_acc:'tot_acc', sec_sav:'tot_sav', sec_dbt:'tot_dbt',
+};
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  DEFAULT ROWS                                        ║
+// ╚══════════════════════════════════════════════════════╝
+const ROWS_DEFAULT = [
+  {id:'sec_inc',  tp:'ctog', stateKey:'inc', color:'default', label:'ДОХОДЫ',                   addType:'income'},
+  {id:'radius',   tp:'income',  label:'Радиус',            day:null, def:250000, section:'sec_inc'},
+  {id:'vtb',      tp:'income',  label:'ВТБ',               day:null, def:365500, section:'sec_inc'},
+  {id:'tot_inc',  tp:'tot_inc', label:'ИТОГО ДОХОДЫ'},
+
+  {id:'sec_fix',  tp:'ctog', stateKey:'fix', color:'default', label:'ОБЯЗАТЕЛЬНЫЕ РАСХОДЫ',     addType:'expense'},
+  {id:'mortgage', tp:'expense', label:'Ипотека',            day:1,  def:44000,  section:'sec_fix'},
+  {id:'sber_c',   tp:'expense', label:'Кредитка Сбербанк', day:1,  def:30000,  section:'sec_fix'},
+  {id:'tbank',    tp:'expense', label:'Кредитки Т-Банка',  day:7,  def:30000,  section:'sec_fix'},
+  {id:'gazprom',  tp:'expense', label:'Кредит Газпром',    day:14, def:26000,  section:'sec_fix'},
+  {id:'sber1',    tp:'expense', label:'Кредит Сбер 1',     day:16, def:35000,  section:'sec_fix'},
+  {id:'sber2',    tp:'expense', label:'Кредит Сбер 2',     day:16, def:17300,  section:'sec_fix'},
+  {id:'taxes',    tp:'expense', label:'Налоги',             day:16, def:20000,  section:'sec_fix'},
+  {id:'ozon',     tp:'expense', label:'Озон + Яндекс',     day:19, def:60000,  section:'sec_fix'},
+  {id:'apt',      tp:'expense', label:'Квартира (ЖКХ)',    day:30, def:12000,  section:'sec_fix'},
+  {id:'vtb_loan', tp:'expense', label:'Кредит ВТБ',        day:16, def:15000,  section:'sec_fix'},
+  {id:'tot_fix',  tp:'tot_fix', label:'Итого обязательные'},
+
+  {id:'sec_var',  tp:'ctog', stateKey:'var', color:'default', label:'ПЕРЕМЕННЫЕ РАСХОДЫ',       addType:'expense'},
+  {id:'mkt',      tp:'expense', label:'Маркетплейсы', day:null, def:30000,  section:'sec_var'},
+  {id:'massage',  tp:'expense', label:'Массаж',        day:null, def:45000,  section:'sec_var'},
+  {id:'banya',    tp:'expense', label:'Баня',          day:null, def:20000,  section:'sec_var'},
+  {id:'apteka',   tp:'expense', label:'Аптека',        day:null, def:20000,  section:'sec_var'},
+  {id:'tobak',    tp:'expense', label:'Табак',         day:null, def:15000,  section:'sec_var'},
+  {id:'alkohol',  tp:'expense', label:'Алкоголь',      day:null, def:15000,  section:'sec_var'},
+  {id:'sport',    tp:'expense', label:'Спорт',         day:null, def:6000,   section:'sec_var'},
+  {id:'bars',     tp:'expense', label:'Барчики',       day:null, def:20000,  section:'sec_var'},
+  {id:'subs',     tp:'expense', label:'Подписки',      day:null, def:15000,  section:'sec_var'},
+  {id:'travel',   tp:'expense', label:'Путешествия',   day:null, def:50000,  section:'sec_var'},
+  {id:'tot_var',  tp:'tot_var', label:'Итого переменные'},
+
+  {id:'tot_exp',  tp:'tot_exp', label:'ИТОГО РАСХОДЫ'},
+  {id:'net',      tp:'net',     label:'За месяц (доходы − расходы)'},
+  {id:'balance',  tp:'balance', label:'💰 БАЛАНС накопленным итогом'},
+
+  {id:'sp1',      tp:'spacer'},
+  {id:'sec_acc',  tp:'ctog', stateKey:'acc', color:'default', label:'ФАКТ — СЧЕТА',             addType:'account'},
+  {id:'acc_vtb',  tp:'account', label:'ВТБ',     day:null, def:0, section:'sec_acc'},
+  {id:'acc_ip',   tp:'account', label:'ИП',      day:null, def:0, section:'sec_acc'},
+  {id:'acc_tb',   tp:'account', label:'Т-Банк',  day:null, def:0, section:'sec_acc'},
+  {id:'tot_acc',  tp:'tot_acc', label:'Итого по счетам'},
+
+  {id:'sp2',      tp:'spacer'},
+  {id:'sec_sav',  tp:'ctog', stateKey:'sav', color:'savings', label:'💎 СБЕРЕЖЕНИЯ',            addType:'savings'},
+  {id:'sav_vtb',  tp:'savings', label:'ВТБ накопления', day:null, def:200000,   section:'sec_sav'},
+  {id:'sav_sea',  tp:'savings', label:'Моря и океаны',  day:null, def:150000,   section:'sec_sav'},
+  {id:'sav_kl',   tp:'savings', label:'Куала Лумпур',   day:null, def:1000000,  section:'sec_sav'},
+  {id:'tot_sav',  tp:'tot_sav', label:'Итого сбережения'},
+
+  {id:'sp3',       tp:'spacer'},
+  {id:'sec_dbt',   tp:'ctog', stateKey:'dbt', color:'debt', label:'🔴 КРЕДИТЫ (остаток долга)', addType:'debt'},
+  {id:'dbt_sberc', tp:'debt', label:'Кредитка Сбербанк', day:null, def:450000,    section:'sec_dbt'},
+  {id:'dbt_vtb',   tp:'debt', label:'Кредит ВТБ',        day:null, def:140000,    section:'sec_dbt'},
+  {id:'dbt_ozon',  tp:'debt', label:'Кредитка Озон',     day:null, def:50000,     section:'sec_dbt'},
+  {id:'dbt_sber1', tp:'debt', label:'Кредит Сбер 1',     day:null, def:237100,    section:'sec_dbt'},
+  {id:'dbt_sber2', tp:'debt', label:'Кредит Сбер 2',     day:null, def:150000,    section:'sec_dbt'},
+  {id:'dbt_ipot',  tp:'debt', label:'Ипотека',            day:null, def:14000000,  section:'sec_dbt'},
+  {id:'dbt_gaz',   tp:'debt', label:'Газпром',            day:null, def:400000,    section:'sec_dbt'},
+  {id:'tot_dbt',   tp:'tot_dbt', label:'Итого долгов'},
+];
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  STATE                                               ║
+// ╚══════════════════════════════════════════════════════╝
+const EDITABLE_TYPES = ['income','expense','account','savings','debt'];
+const DEFAULT_SECT   = {inc:true, fix:true, var:true, acc:true, sav:false, dbt:false};
+
+let rows, plan, sectOpen, hiddenMonths, closeDates;
+
+function buildPlan(rowArr) {
+  const p = {};
+  rowArr.forEach(r => {
+    if (EDITABLE_TYPES.includes(r.tp))
+      p[r.id] = Array.from({length: NM}, () => r.def ?? 0);
+  });
+  return p;
+}
+
+function initDefaults() {
+  rows         = JSON.parse(JSON.stringify(ROWS_DEFAULT));
+  plan         = buildPlan(rows);
+  sectOpen     = {...DEFAULT_SECT};
+  hiddenMonths = new Set();
+  closeDates   = {};
+}
+
+// ── Firestore persistence ────────────────────────────
+let saveTimer = null;
+
+function getDocRef() {
+  return db.collection('users').doc(currentUser.uid).collection('data').doc('main');
+}
+
+async function loadFromFirestore() {
+  try {
+    const snap = await getDocRef().get();
+    if (snap.exists) {
+      const d = snap.data();
+      rows         = d.rows         || JSON.parse(JSON.stringify(ROWS_DEFAULT));
+      plan         = d.plan         || buildPlan(rows);
+      sectOpen     = Object.assign({}, DEFAULT_SECT, d.sectOpen || {});
+      hiddenMonths = new Set(d.hiddenMonths || []);
+      closeDates   = d.closeDates   || {};
+      // backfill plan for any missing rows
+      rows.forEach(r => {
+        if (EDITABLE_TYPES.includes(r.tp) && !plan[r.id])
+          plan[r.id] = Array.from({length: NM}, () => r.def ?? 0);
+      });
+    } else {
+      initDefaults();
+    }
+  } catch(e) {
+    console.error('Load error:', e);
+    initDefaults();
+  }
+}
+
+function save() {
+  if (!currentUser) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await getDocRef().set({
+        rows, plan, sectOpen,
+        hiddenMonths: [...hiddenMonths],
+        closeDates,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const ind = document.getElementById('save-ind');
+      ind.classList.add('show');
+      setTimeout(() => ind.classList.remove('show'), 2000);
+    } catch(e) { console.error('Save error:', e); }
+  }, 800); // debounce 800ms
+}
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  CALCULATIONS                                        ║
+// ╚══════════════════════════════════════════════════════╝
+function sumType(tp, m) { return rows.filter(r=>r.tp===tp).reduce((s,r)=>s+(plan[r.id]?.[m]??0),0); }
+function totInc(m) { return sumType('income',  m); }
+function totExp(m) { return sumType('expense', m); }
+function totAcc(m) { return sumType('account', m); }
+function totSav(m) { return sumType('savings', m); }
+function totDbt(m) { return sumType('debt',    m); }
+function totFix(m) { return rows.filter(r=>r.tp==='expense'&&r.section==='sec_fix').reduce((s,r)=>s+(plan[r.id]?.[m]??0),0); }
+function totVar(m) { return rows.filter(r=>r.tp==='expense'&&r.section==='sec_var').reduce((s,r)=>s+(plan[r.id]?.[m]??0),0); }
+function cumBal(m) { let b=0; for(let i=0;i<=m;i++) b+=totInc(i)-totExp(i); return b; }
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  FORMATTING                                          ║
+// ╚══════════════════════════════════════════════════════╝
+function fmtN(n) { return Math.round(n).toLocaleString('ru-RU'); }
+function parseN(s) { return parseFloat(String(s).replace(/\s/g,'').replace(',','.')) || 0; }
+function cc(n) { return n>0?'pos':n<0?'neg':'zero'; }
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  USER ACTIONS                                        ║
+// ╚══════════════════════════════════════════════════════╝
+function editLabel(rowId) {
+  const r = rows.find(x=>x.id===rowId); if (!r) return;
+  const name = prompt('Новое название:', r.label);
+  if (name===null) return;
+  r.label = name.trim() || r.label;
+  save(); render();
+}
+
+function deleteRow(rowId) {
+  if (!confirm('Удалить строку?')) return;
+  const idx = rows.findIndex(x=>x.id===rowId); if (idx<0) return;
+  rows.splice(idx,1); delete plan[rowId];
+  save(); render();
+}
+
+function addRow(sectionId) {
+  const sec = rows.find(x=>x.id===sectionId); if (!sec) return;
+  const name = prompt('Название новой строки:'); if (!name) return;
+  const boundary = INS_BEFORE[sectionId];
+  const idx = rows.findIndex(x=>x.id===boundary);
+  const newRow = { id:'r'+Date.now(), tp:sec.addType, label:name.trim(), day:null, def:0, section:sectionId };
+  if (idx>=0) rows.splice(idx,0,newRow); else rows.push(newRow);
+  plan[newRow.id] = new Array(NM).fill(0);
+  save(); render();
+}
+
+function toggleSection(key) { sectOpen[key]=!sectOpen[key]; save(); render(); }
+function toggleMonth(m) {
+  if (hiddenMonths.has(m)) hiddenMonths.delete(m); else hiddenMonths.add(m);
+  save(); render();
+}
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  INPUT FACTORY                                       ║
+// ╚══════════════════════════════════════════════════════╝
+function makeInput(rowId, mi) {
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'val';
+  inp.value = fmtN(plan[rowId]?.[mi] ?? 0);
+  inp.addEventListener('focus', function() { this.value = plan[rowId]?.[mi] ?? 0; this.select(); });
+  inp.addEventListener('blur', function() {
+    const v = parseN(this.value);
+    if (!plan[rowId]) plan[rowId] = new Array(NM).fill(0);
+    for (let m=mi; m<NM; m++) plan[rowId][m] = v;
+    save(); render();
+  });
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') e.target.blur(); });
+  return inp;
+}
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  RENDER                                              ║
+// ╚══════════════════════════════════════════════════════╝
+function render() {
+  const totalCols = 2 + NM;
+
+  // ── HEADER ──────────────────────────────────────────
+  const thead = document.getElementById('thead');
+  thead.innerHTML = '';
+  const hr = document.createElement('tr');
+  const hL = document.createElement('th'); hL.className='cl'; hr.appendChild(hL);
+  const hD = document.createElement('th'); hD.className='cd'; hD.textContent='День'; hr.appendChild(hD);
+  MLABELS.forEach((lbl, i) => {
+    const th = document.createElement('th');
+    if (hiddenMonths.has(i)) {
+      th.className='hid-th'; th.title=`Показать ${lbl}`; th.onclick=()=>toggleMonth(i);
+      const sp=document.createElement('span'); sp.textContent=lbl; th.appendChild(sp);
+    } else {
+      th.className='mon-th'+(i===CUR?' cur':'');
+      th.textContent=lbl; th.style.minWidth='105px';
+      th.title=`Скрыть ${lbl}`; th.onclick=()=>toggleMonth(i);
+    }
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+
+  // ── BODY ─────────────────────────────────────────────
+  const tbody = document.getElementById('tbody');
+  const frag  = document.createDocumentFragment();
+
+  function addMonthCells(tr, cellFn) {
+    for (let m=0; m<NM; m++) {
+      const td = document.createElement('td');
+      if (hiddenMonths.has(m)) { td.className='hid-td'; tr.appendChild(td); continue; }
+      if (m===CUR) td.classList.add('cur');
+      cellFn(td, m);
+      tr.appendChild(td);
+    }
+  }
+
+  const secKeyMap = {};
+  rows.forEach(r => { if(r.tp==='ctog') secKeyMap[r.id]=r.stateKey; });
+
+  rows.forEach(row => {
+    // SPACER
+    if (row.tp==='spacer') {
+      const tr=document.createElement('tr'); tr.className='r-sp';
+      const td=document.createElement('td'); td.colSpan=totalCols;
+      tr.appendChild(td); frag.appendChild(tr); return;
+    }
+
+    // CTOG
+    if (row.tp==='ctog') {
+      const tr=document.createElement('tr'); tr.className=`ctog ctog-${row.color||'default'}`;
+      const td=document.createElement('td'); td.colSpan=totalCols;
+      const inner=document.createElement('div'); inner.className='sec-inner';
+      const left=document.createElement('span');
+      left.innerHTML=`${sectOpen[row.stateKey]?'▼':'▶'} ${row.label}`;
+      left.onclick=()=>toggleSection(row.stateKey);
+      inner.appendChild(left);
+      if (row.addType) {
+        const ab=document.createElement('button'); ab.className='add-btn'; ab.textContent='＋ добавить';
+        ab.onclick=e=>{e.stopPropagation();addRow(row.id);}; inner.appendChild(ab);
+      }
+      td.appendChild(inner); tr.appendChild(td); frag.appendChild(tr); return;
+    }
+
+    // Visibility by section
+    if (row.section) {
+      const key=secKeyMap[row.section];
+      if (key && !sectOpen[key]) return;
+    }
+
+    const cls = {
+      income:'r-inc', expense:'r-exp',
+      tot_inc:'r-ti', tot_exp:'r-te', tot_fix:'r-te', tot_var:'r-te',
+      net:'r-net', balance:'r-bal',
+      account:'r-acc', tot_acc:'r-tat',
+      savings:'r-sav', tot_sav:'r-tsa',
+      debt:'r-dbt',    tot_dbt:'r-tdt',
+    }[row.tp] || '';
+
+    const tr=document.createElement('tr'); if(cls) tr.className=cls;
+
+    // Label cell
+    const lc=document.createElement('td'); lc.className='cl';
+    if (EDITABLE_TYPES.includes(row.tp)) {
+      const wrap=document.createElement('div'); wrap.className='lbl-wrap';
+      const txt=document.createElement('span'); txt.className='lbl-txt';
+      txt.textContent=row.label; txt.title='Кликните для переименования';
+      txt.onclick=()=>editLabel(row.id);
+      const del=document.createElement('button'); del.className='del-btn';
+      del.innerHTML='×'; del.title='Удалить строку'; del.onclick=()=>deleteRow(row.id);
+      wrap.appendChild(txt); wrap.appendChild(del); lc.appendChild(wrap);
+    } else { lc.textContent=row.label; }
+    tr.appendChild(lc);
+
+    // Day cell
+    const dc=document.createElement('td'); dc.className='cd';
+    if (row.tp==='debt') {
+      const dp=document.createElement('input'); dp.type='date'; dp.className='date-pick';
+      dp.value=closeDates[row.id]||''; dp.title='Дата закрытия кредита';
+      dp.addEventListener('change',function(){closeDates[row.id]=this.value;save();});
+      dc.appendChild(dp);
+    } else { dc.textContent=(row.day!=null)?row.day:''; }
+    tr.appendChild(dc);
+
+    // Month cells
+    addMonthCells(tr, (td, m) => {
+      if      (EDITABLE_TYPES.includes(row.tp)) td.appendChild(makeInput(row.id,m));
+      else if (row.tp==='tot_inc')  { td.textContent=fmtN(totInc(m)); td.classList.add('pos'); }
+      else if (row.tp==='tot_fix')  { td.textContent=fmtN(totFix(m)); td.classList.add('neg'); }
+      else if (row.tp==='tot_var')  { td.textContent=fmtN(totVar(m)); td.classList.add('neg'); }
+      else if (row.tp==='tot_exp')  { td.textContent=fmtN(totExp(m)); td.classList.add('neg'); }
+      else if (row.tp==='net')      { const v=totInc(m)-totExp(m); td.textContent=fmtN(v); td.classList.add(cc(v)); }
+      else if (row.tp==='balance')  { const v=cumBal(m); td.textContent=fmtN(v); td.classList.add(cc(v)); }
+      else if (row.tp==='tot_acc')  { td.textContent=fmtN(totAcc(m)); td.style.color='#90cdf4'; }
+      else if (row.tp==='tot_sav')  { td.textContent=fmtN(totSav(m)); td.style.color='var(--savings)'; }
+      else if (row.tp==='tot_dbt')  { td.textContent=fmtN(totDbt(m)); td.style.color='#f87171'; }
+    });
+
+    frag.appendChild(tr);
+  });
+
+  tbody.innerHTML=''; tbody.appendChild(frag);
+}
+</script>
+</body>
+</html>
