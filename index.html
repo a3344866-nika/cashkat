@@ -331,8 +331,9 @@ input.val::-webkit-inner-spin-button,input.val::-webkit-outer-spin-button{displa
 input.val:hover{background:var(--inp-h);border-radius:3px}
 input.val:focus{outline:1px solid var(--accent);background:var(--inp-f);border-radius:3px}
 input.date-pick{background:transparent;border:none;color:var(--muted);font-size:10px;
-                font-family:inherit;width:100%;text-align:center;cursor:pointer;padding:0;color-scheme:light dark}
-input.date-pick:focus{outline:1px solid var(--accent);border-radius:3px}
+                font-family:'JetBrains Mono',monospace;width:82px;text-align:center;cursor:text;padding:2px 0}
+input.date-pick::placeholder{color:var(--muted);opacity:.45;font-size:9px}
+input.date-pick:focus{outline:1px solid var(--accent);border-radius:3px;color:var(--text)}
 .pos{color:var(--pos)} .neg{color:var(--neg)} .zero{color:var(--muted)}
 
 /* ═══ GOALS TAB ═════════════════════════════════════════ */
@@ -1381,7 +1382,32 @@ function render(){
     tr.appendChild(lc);
     // day
     const dc=document.createElement('td');dc.className='cd';
-    if(row.tp==='debt'){const dp=document.createElement('input');dp.type='date';dp.className='date-pick';dp.value=closeDates[row.id]||'';dp.title='Дата закрытия';dp.addEventListener('change',function(){closeDates[row.id]=this.value;save();render()});dc.appendChild(dp)}
+    if(row.tp==='debt'){
+      const dp=document.createElement('input');dp.type='text';dp.className='date-pick';
+      dp.placeholder='ДД.ММ.ГГГГ';dp.title='Дата закрытия кредита';dp.maxLength=10;
+      // convert stored YYYY-MM-DD → DD.MM.YYYY for display
+      const stored=closeDates[row.id]||'';
+      if(stored){const[y,mo,d]=stored.split('-');dp.value=`${d}.${mo}.${y}`;}
+      dp.addEventListener('input',function(){
+        // auto-insert dots: 01 → 01. → 01.06 → 01.06. → 01.06.2026
+        let v=this.value.replace(/[^\d.]/g,'');
+        const digits=v.replace(/\./g,'');
+        if(digits.length>2&&!v.includes('.')){v=digits.slice(0,2)+'.'+digits.slice(2)}
+        if(digits.length>4&&v.split('.').length<3){v=digits.slice(0,2)+'.'+digits.slice(2,4)+'.'+digits.slice(4)}
+        this.value=v;
+      });
+      dp.addEventListener('blur',function(){
+        const parts=this.value.split('.');
+        if(parts.length===3&&parts[0].length===2&&parts[1].length===2&&parts[2].length===4){
+          const iso=`${parts[2]}-${parts[1]}-${parts[0]}`;
+          closeDates[row.id]=iso;save();render();
+        } else if(this.value===''){
+          delete closeDates[row.id];save();render();
+        }
+      });
+      dp.addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+      dc.appendChild(dp);
+    }
     else{dc.textContent=(row.day!=null)?row.day:''}
     tr.appendChild(dc);
     // month cells
