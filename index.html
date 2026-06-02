@@ -410,7 +410,7 @@ input,button{font-family:'Manrope',system-ui,sans-serif}
   background:linear-gradient(145deg,#8B5CF6,#6D28D9);
   box-shadow:0 8px 24px rgba(139,92,246,0.40),inset 0 1px 0 rgba(255,255,255,0.25);
 }
-.sb-nav{padding:18px 0!important;gap:8px!important;width:100%;align-items:center}
+.sb-nav{padding:18px 0!important;gap:8px!important;width:100%;align-items:center;overflow:hidden!important}
 .nav-item{
   width:48px!important;height:48px!important;border-radius:15px!important;
   font-size:21px!important;opacity:.4;
@@ -449,11 +449,12 @@ input,button{font-family:'Manrope',system-ui,sans-serif}
 .sb-bottom{padding:14px 0!important;align-items:center;border-top:1px solid rgba(255,255,255,0.06)!important}
 .sb-avatar{width:40px;height:40px;border-radius:12px!important;border:none!important;object-fit:cover}
 .sb-signout{
-  width:48px!important;height:48px!important;border-radius:15px!important;
-  font-size:18px!important;padding:0!important;justify-content:center;
-  opacity:.4;transition:opacity .2s,background .2s;
+  width:52px!important;height:28px!important;border-radius:8px!important;
+  font-size:11px!important;padding:0 6px!important;justify-content:center;
+  opacity:.4;transition:opacity .2s,background .2s;color:rgba(237,238,245,0.6)!important;
+  border:1px solid rgba(255,255,255,0.08)!important;
 }
-.sb-signout:hover{opacity:.85!important;background:rgba(255,255,255,0.04)!important;color:inherit!important}
+.sb-signout:hover{opacity:1!important;background:rgba(239,68,68,0.12)!important;color:#EF4444!important;border-color:rgba(239,68,68,0.25)!important}
 
 /* ── MAIN STAGE ── */
 .main{background:transparent!important}
@@ -539,6 +540,8 @@ tbody td{font-size:13.5px;height:42px;border-bottom:1px solid rgba(255,255,255,0
 
 /* ── DATA ROW labels ── */
 .lbl-wrap{gap:10px!important}
+/* indent expense rows slightly */
+tr.r-exp .lbl-wrap,tr.r-goal .lbl-wrap{padding-left:8px}
 .heat-bar{
   width:3px!important;min-width:3px!important;height:18px;
   border-radius:3px;flex-shrink:0;margin-right:0!important;
@@ -569,21 +572,43 @@ tr.ctog td{
   height:46px!important;font-size:12px!important;font-weight:800!important;
   letter-spacing:.9px!important;text-transform:uppercase!important;
   border-bottom:1px solid rgba(255,255,255,0.06)!important;
-  border-top:none!important;
-  padding:0 16px!important;
-  color:#EDEEF5!important;
+  border-top:none!important;padding:0 16px!important;color:#EDEEF5!important;
 }
 tr.ctog td.cl{text-align:left!important;padding:0 16px!important}
 tr.ctog:hover td{filter:none!important}
+
+/* Top-level sections: ДОХОДЫ, РАСХОДЫ, ФАКТ·СЧЕТА, СБЕРЕЖЕНИЯ, КРЕДИТЫ, ЦЕЛИ */
 tr.ctog-inc td,tr.ctog-inc td.cl,tr.ctog-inc td.cd{background:#151621!important}
-tr.ctog-fix td,tr.ctog-fix td.cl,tr.ctog-fix td.cd,
-tr.ctog-var td,tr.ctog-var td.cl,tr.ctog-var td.cd{background:#191B28!important}
+tr.ctog-exp td,tr.ctog-exp td.cl,tr.ctog-exp td.cd{background:#151621!important}
 tr.ctog-acc td,tr.ctog-acc td.cl,tr.ctog-acc td.cd{background:#0F1019!important}
-tr.ctog-sav td,tr.ctog-sav td.cl,tr.ctog-sav td.cd{background:#191B28!important}
-tr.ctog-dbt td,tr.ctog-dbt td.cl,tr.ctog-dbt td.cd{background:#191B28!important}
+tr.ctog-sav td,tr.ctog-sav td.cl,tr.ctog-sav td.cd{background:#151621!important}
+tr.ctog-dbt td,tr.ctog-dbt td.cl,tr.ctog-dbt td.cd{background:#151621!important}
 tr.ctog-goals td,tr.ctog-goals td.cl,tr.ctog-goals td.cd{background:#151621!important}
-tr.ctog:hover td{background:rgba(255,255,255,0.03)!important}
+
+/* Sub-sections: ОБЯЗАТЕЛЬНЫЕ, ПЕРЕМЕННЫЕ — indented, smaller, less prominent */
+tr.ctog-fix td,tr.ctog-var td{
+  height:38px!important;font-size:10.5px!important;font-weight:700!important;
+  letter-spacing:.8px!important;background:#0F1019!important;
+}
+tr.ctog-fix td.cl,tr.ctog-fix td.cd{
+  background:#0F1019!important;
+  border-left:3px solid rgba(239,68,68,0.4)!important;
+  padding-left:20px!important;
+}
+tr.ctog-var td.cl,tr.ctog-var td.cd{
+  background:#0F1019!important;
+  border-left:3px solid rgba(139,92,246,0.4)!important;
+  padding-left:20px!important;
+}
+tr.ctog-fix .sec-lbl,tr.ctog-var .sec-lbl{
+  color:rgba(237,238,245,0.65)!important;font-size:10.5px!important;
+}
+
+/* hover */
+tr.ctog:hover td{background:rgba(255,255,255,0.025)!important}
 tr.ctog:hover td.cl{background:#20222F!important}
+tr.ctog-fix:hover td.cl{background:#1A1B26!important;border-left-color:rgba(239,68,68,0.7)!important}
+tr.ctog-var:hover td.cl{background:#1A1B26!important;border-left-color:rgba(139,92,246,0.7)!important}
 
 /* sec-inner redesign — matches design chevron + dot */
 .sec-inner{gap:10px!important;align-items:center!important}
@@ -598,6 +623,7 @@ tr.ctog:hover td.cl{background:#20222F!important}
   width:9px!important;height:9px!important;border-radius:3px!important;
   flex-shrink:0;display:inline-block!important;
 }
+tr.ctog-fix .sec-dot,tr.ctog-var .sec-dot{width:7px!important;height:7px!important}
 .sec-lbl{font-size:12px!important;font-weight:800!important;letter-spacing:.9px!important;color:#EDEEF5!important}
 .sec-add{
   background:rgba(255,255,255,0.08)!important;width:16px!important;height:16px!important;
@@ -608,15 +634,17 @@ tr.ctog:hover td.cl{background:#20222F!important}
 
 /* ── PARENT HEADING (РАСХОДЫ) ── */
 tr.r-hdg-exp td,tr.r-hdg-exp td.cl,tr.r-hdg-exp td.cd{
-  background:#191B28!important;
-  color:rgba(237,238,245,0.56)!important;
+  background:#0B0C15!important;
+  color:rgba(237,238,245,0.35)!important;
   font-size:10px!important;font-weight:700!important;
-  letter-spacing:.9px!important;padding:5px 16px!important;height:32px!important;
+  letter-spacing:1px!important;padding:4px 16px!important;height:28px!important;
+  border-bottom:none!important;
 }
 
 /* ── TOTAL ROWS ── */
 tr.r-ti td,tr.r-ti .cl{font-weight:700!important;color:#22C55E!important;font-size:13.5px!important;border-top:1px solid rgba(255,255,255,0.06)!important}
 tr.r-te td,tr.r-te .cl{font-weight:700!important;color:#EF4444!important;font-size:13.5px!important;border-top:1px solid rgba(255,255,255,0.06)!important}
+tr.r-tvar td,tr.r-tvar .cl{font-weight:700!important;color:#8B5CF6!important;font-size:13.5px!important;border-top:1px solid rgba(255,255,255,0.06)!important}
 tr.r-tgoals td,tr.r-tgoals .cl{font-weight:700!important;color:#10b981!important}
 tr.r-tat td,tr.r-tat .cl{font-weight:700!important;color:#06B6D4!important}
 tr.r-tsa td,tr.r-tsa .cl{font-weight:700!important;color:#8B5CF6!important}
@@ -730,7 +758,7 @@ tr.r-editing td{background:rgba(139,92,246,0.06)!important}
       <img id="sb-avatar" class="sb-avatar" src="" alt="">
     </div>
     <button class="sb-signout" id="signout-btn" style="display:none" onclick="signOutUser()">
-      ↪️<span class="tip">Выйти</span>
+      <span style="font-size:11px;font-weight:600;letter-spacing:.3px">Выйти</span>
     </button>
     <span class="dev-badge" id="dev-badge" style="display:none">🛠</span>
   </div>
@@ -812,7 +840,7 @@ function showLogin(){$('login-screen').style.display='flex';$('loading-screen').
 function showLoading(){$('login-screen').style.display='none';$('loading-screen').style.display='flex';$('app').style.display='none'}
 function showApp(){$('login-screen').style.display='none';$('loading-screen').style.display='none';$('app').style.display='block'}
 async function signInGoogle(){if(IS_DEV){startDev();return}try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(e){alert('Ошибка: '+e.message)}}
-async function signOutUser(){if(IS_DEV){showLogin();return}if(!confirm('Выйти?'))return;await auth.signOut()}
+async function signOutUser(){if(IS_DEV){showLogin();return}await auth.signOut()}
 function startDev(){initState();loadLocal();$('dev-badge').style.display='block';showApp();render();renderGoals();initStickyHeader();applyStickyNow()}
 if(IS_DEV){$('dev-notice').style.display=''}
 else{auth.onAuthStateChanged(async user=>{
@@ -872,12 +900,12 @@ const ROWS_DEF=[
   {id:'sec_inc',   tp:'ctog',    sk:'inc',   cl:'inc',   label:'ДОХОДЫ',                   at:'income'},
   {id:'tot_inc',   tp:'tot_inc', label:'ИТОГО ДОХОДЫ'},
 
-  {id:'sec_exp',   tp:'hdg',                 cl:'exp',   label:'РАСХОДЫ'},
-  {id:'sec_fix',   tp:'ctog',    sk:'fix',   cl:'fix',   label:'ОБЯЗАТЕЛЬНЫЕ',             at:'expense'},
-  {id:'tot_fix',   tp:'tot_fix', label:'Итого обязательные'},
+  {id:'sec_exp',   tp:'ctog',    sk:'exp',   cl:'exp',   label:'РАСХОДЫ'},
+  {id:'sec_fix',   tp:'ctog',    sk:'fix',   cl:'fix',   label:'ОБЯЗАТЕЛЬНЫЕ',  parentSk:'exp', at:'expense'},
+  {id:'tot_fix',   tp:'tot_fix', label:'Итого обязательные', parentSk:'exp'},
 
-  {id:'sec_var',   tp:'ctog',    sk:'var',   cl:'var',   label:'ПЕРЕМЕННЫЕ',               at:'expense'},
-  {id:'tot_var',   tp:'tot_var', label:'Итого переменные'},
+  {id:'sec_var',   tp:'ctog',    sk:'var',   cl:'var',   label:'ПЕРЕМЕННЫЕ',    parentSk:'exp', at:'expense'},
+  {id:'tot_var',   tp:'tot_var', label:'Итого переменные', parentSk:'exp'},
 
   {id:'sec_goals', tp:'ctog',    sk:'goals', cl:'goals', label:'ЦЕЛИ',                    at:'goal'},
   {id:'tot_goals', tp:'tot_goals',label:'Итого цели'},
@@ -905,7 +933,7 @@ const DEF_CLOSE_DATES={};
 //  STATE
 // ═══════════════════════════════════════════════════
 const ET=['income','expense','account','savings','debt','goal'];
-const DEF_SECT={inc:true,fix:true,var:true,acc:true,sav:false,dbt:false,goals:true};
+const DEF_SECT={inc:true,exp:true,fix:true,var:true,acc:true,sav:false,dbt:false,goals:true};
 const DEF_YRS_HID=new Set(YEARS.map(y=>y.y).filter(y=>y!==CUR_YEAR));
 // All months of current year are visible by default — no individual months hidden
 const DEF_MON_HID=new Set();
@@ -948,10 +976,18 @@ function unpackState(d){
   // Migration: inject sec_exp (РАСХОДЫ parent heading) if missing
   if(!rows.find(r=>r.id==='sec_exp')){
     const fi=rows.findIndex(r=>r.id==='sec_fix');
-    if(fi>=0)rows.splice(fi,0,{id:'sec_exp',tp:'hdg',cl:'exp',label:'РАСХОДЫ'});
+    if(fi>=0)rows.splice(fi,0,{id:'sec_exp',tp:'ctog',sk:'exp',cl:'exp',label:'РАСХОДЫ'});
   }
-  // Migration: shorten sub-section labels
+  // Migration: upgrade sec_exp from hdg to ctog
+  const expRow=rows.find(r=>r.id==='sec_exp');
+  if(expRow&&expRow.tp==='hdg'){expRow.tp='ctog';expRow.sk='exp';}
+  // Migration: add parentSk to fix/var rows
   rows.forEach(r=>{
+    if(r.id==='sec_fix'&&!r.parentSk)r.parentSk='exp';
+    if(r.id==='sec_var'&&!r.parentSk)r.parentSk='exp';
+    if(r.id==='tot_fix'&&!r.parentSk)r.parentSk='exp';
+    if(r.id==='tot_var'&&!r.parentSk)r.parentSk='exp';
+    if(r.id==='tot_exp')delete r.parentSk;
     if(r.id==='sec_fix'&&r.label==='ОБЯЗАТЕЛЬНЫЕ РАСХОДЫ')r.label='ОБЯЗАТЕЛЬНЫЕ';
     if(r.id==='sec_var'&&r.label==='ПЕРЕМЕННЫЕ РАСХОДЫ')r.label='ПЕРЕМЕННЫЕ';
   });
@@ -1179,7 +1215,7 @@ function render(){
   // year row
   const yrTr=document.createElement('tr');yrTr.className='yr-row';
   const yrL=document.createElement('th');yrL.className='cl';yrL.rowSpan=2;yrTr.appendChild(yrL);
-  const yrD=document.createElement('th');yrD.className='cd';yrD.rowSpan=2;yrD.textContent='День';yrTr.appendChild(yrD);
+  const yrD=document.createElement('th');yrD.className='cd';yrD.rowSpan=2;yrTr.appendChild(yrD);
   YEARS.forEach(yr=>{
     const hid=hiddenYears.has(yr.y);const th=document.createElement('th');
     th.colSpan=yr.len+1;th.dataset.yr=yr.y;th.textContent=yr.y+'';
@@ -1227,7 +1263,7 @@ function render(){
   function heatColor(r){const h=Math.round(120-r*120);return`hsl(${h},72%,${theme==='dark'?52:44}%)`}
 
   const CLSMAP={income:'r-inc',expense:'r-exp',goal:'r-goal',
-    tot_inc:'r-ti',tot_exp:'r-te',tot_fix:'r-te',tot_var:'r-te',tot_goals:'r-tgoals',
+    tot_inc:'r-ti',tot_exp:'r-te',tot_fix:'r-te',tot_var:'r-tvar',tot_goals:'r-tgoals',
     net:'r-net',balance:'r-bal',account:'r-acc',tot_acc:'r-tat',
     savings:'r-sav',tot_sav:'r-tsa',debt:'r-dbt',tot_dbt:'r-tdt'};
 
@@ -1283,7 +1319,9 @@ function render(){
   rows.forEach(row=>{
     // Hide goals section when no goals exist
     if((row.id==='sec_goals'||row.id==='tot_goals')&&goals.length===0)return;
-    // Parent heading row (non-interactive, e.g. РАСХОДЫ)
+    // Check parentSk visibility (e.g. fix/var hidden when exp is collapsed)
+    if(row.parentSk && !sectOpen[row.parentSk]) return;
+    // Parent heading row (legacy hdg — no longer used but keep for migration)
     if(row.tp==='hdg'){
       const tr=document.createElement('tr');tr.className=`r-hdg r-hdg-${row.cl}`;
       const lc=document.createElement('td');lc.className='cl';lc.textContent=row.label;tr.appendChild(lc);
@@ -1293,7 +1331,7 @@ function render(){
     }
     if(row.tp==='spacer'){const tr=document.createElement('tr');tr.className='r-sp';const td=document.createElement('td');td.colSpan=63;tr.appendChild(td);frag.appendChild(tr);return}
     if(row.tp==='ctog'){
-      const DOT_COLORS={inc:'#22C55E',fix:'#EF4444',var:'#8B5CF6',acc:'rgba(237,238,245,0.35)',sav:'#8B5CF6',dbt:'#F5A524',goals:'#10b981'};
+      const DOT_COLORS={inc:'#22C55E',exp:'#EF4444',fix:'#EF4444',var:'#8B5CF6',acc:'rgba(237,238,245,0.35)',sav:'#8B5CF6',dbt:'#F5A524',goals:'#10b981'};
       const isOpen=sectOpen[row.sk];
       const tr=document.createElement('tr');tr.className=`ctog ctog-${row.cl}`;
       const lc=document.createElement('td');lc.className='cl';
@@ -1311,7 +1349,12 @@ function render(){
       const rest=document.createElement('td');rest.colSpan=61;rest.onclick=()=>toggleSec(row.sk);tr.appendChild(rest);
       frag.appendChild(tr);return;
     }
-    if(row.sec){const sk=skMap[row.sec];if(sk&&!sectOpen[sk])return}
+    if(row.sec){
+      const sk=skMap[row.sec];if(sk&&!sectOpen[sk])return;
+      // also hide if parent section's parent is collapsed (e.g. exp collapsed → fix rows hidden)
+      const secRow=rows.find(r=>r.id===row.sec);
+      if(secRow?.parentSk&&!sectOpen[secRow.parentSk])return;
+    }
 
     // Before total rows: insert editing row or placeholder if section is empty
     if(TOT_TO_SEC[row.id]){
