@@ -816,7 +816,7 @@ async function signOutUser(){if(IS_DEV){showLogin();return}if(!confirm('Выйт
 function startDev(){initState();loadLocal();$('dev-badge').style.display='block';showApp();render();renderGoals();initStickyHeader();applyStickyNow()}
 if(IS_DEV){$('dev-notice').style.display=''}
 else{auth.onAuthStateChanged(async user=>{
-  if(user){currentUser=user;$('sb-name').textContent=user.displayName||user.email;
+  if(user){currentUser=user;if($('sb-name'))$('sb-name').textContent=user.displayName||user.email;
     $('sb-avatar').src=user.photoURL||'';$('sb-user').style.display=user.photoURL?'flex':'none';
     $('signout-btn').style.display='';showLoading();await loadFirestore();showApp();render();renderGoals()}
   else{currentUser=null;showLogin()}
@@ -1420,7 +1420,7 @@ function restoreGoals(){goals.forEach(g=>applyGoalToRows(g))}
 
 if(IS_DEV){$('dev-notice').style.display=''}
 else{auth.onAuthStateChanged(async user=>{
-  if(user){currentUser=user;$('sb-name').textContent=user.displayName||user.email;
+  if(user){currentUser=user;if($('sb-name'))$('sb-name').textContent=user.displayName||user.email;
     $('sb-avatar').src=user.photoURL||'';$('sb-user').style.display=user.photoURL?'flex':'none';
     $('signout-btn').style.display='';showLoading();await loadFirestore();restoreGoals();showApp();render();renderGoals();initStickyHeader();applyStickyNow()}
   else{currentUser=null;showLogin()}
