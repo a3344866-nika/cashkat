@@ -1030,7 +1030,9 @@ const totGoals=m=>st('goal',m);
 const totExp=m=>st('expense',m)+totGoals(m);
 const totAcc=m=>st('account',m);
 const totSav=m=>st('savings',m);
-const totDbt=m=>st('debt',m);
+const totDbt=m=>rows.filter(r=>r.tp==='debt').reduce((s,r)=>{
+  return debtSt(r.id,m)==='past'?s:s+(plan[r.id]?.[m]??0);
+},0);
 const totFix=m=>stSec('sec_fix',m);
 const totVar=m=>stSec('sec_var',m);
 const cumBal=m=>{let b=0;for(let i=0;i<=m;i++)b+=totInc(i)-totExp(i);return b};
@@ -1383,30 +1385,44 @@ function render(){
     // day
     const dc=document.createElement('td');dc.className='cd';
     if(row.tp==='debt'){
+      const wrap=document.createElement('div');wrap.style.cssText='display:flex;align-items:center;gap:2px;justify-content:center;position:relative';
       const dp=document.createElement('input');dp.type='text';dp.className='date-pick';
       dp.placeholder='ДД.ММ.ГГГГ';dp.title='Дата закрытия кредита';dp.maxLength=10;
       // convert stored YYYY-MM-DD → DD.MM.YYYY for display
       const stored=closeDates[row.id]||'';
       if(stored){const[y,mo,d]=stored.split('-');dp.value=`${d}.${mo}.${y}`;}
       dp.addEventListener('input',function(){
-        // auto-insert dots: 01 → 01. → 01.06 → 01.06. → 01.06.2026
         let v=this.value.replace(/[^\d.]/g,'');
         const digits=v.replace(/\./g,'');
-        if(digits.length>2&&!v.includes('.')){v=digits.slice(0,2)+'.'+digits.slice(2)}
+        if(digits.length>2&&v.indexOf('.')<0){v=digits.slice(0,2)+'.'+digits.slice(2)}
         if(digits.length>4&&v.split('.').length<3){v=digits.slice(0,2)+'.'+digits.slice(2,4)+'.'+digits.slice(4)}
         this.value=v;
       });
+      function saveDate(isoVal){closeDates[row.id]=isoVal;save();render();}
       dp.addEventListener('blur',function(){
         const parts=this.value.split('.');
         if(parts.length===3&&parts[0].length===2&&parts[1].length===2&&parts[2].length===4){
-          const iso=`${parts[2]}-${parts[1]}-${parts[0]}`;
-          closeDates[row.id]=iso;save();render();
-        } else if(this.value===''){
-          delete closeDates[row.id];save();render();
-        }
+          saveDate(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        } else if(this.value===''){delete closeDates[row.id];save();render();}
       });
       dp.addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
-      dc.appendChild(dp);
+      // hidden native date picker
+      const cal=document.createElement('input');cal.type='date';cal.tabIndex=-1;
+      cal.style.cssText='position:absolute;opacity:0;pointer-events:none;width:0;height:0;top:0;left:0';
+      if(stored)cal.value=stored;
+      cal.addEventListener('change',function(){
+        if(!this.value)return;
+        const[y,mo,d]=this.value.split('-');
+        dp.value=`${d}.${mo}.${y}`;saveDate(this.value);
+      });
+      const btn=document.createElement('button');
+      btn.innerHTML='📅';btn.title='Выбрать дату';
+      btn.style.cssText='background:none;border:none;cursor:pointer;font-size:11px;padding:0 1px;opacity:.4;line-height:1;flex-shrink:0';
+      btn.addEventListener('mouseenter',()=>btn.style.opacity='1');
+      btn.addEventListener('mouseleave',()=>btn.style.opacity='.4');
+      btn.addEventListener('click',e=>{e.stopPropagation();cal.showPicker?cal.showPicker():cal.click()});
+      wrap.appendChild(dp);wrap.appendChild(btn);wrap.appendChild(cal);
+      dc.appendChild(wrap);
     }
     else{dc.textContent=(row.day!=null)?row.day:''}
     tr.appendChild(dc);
